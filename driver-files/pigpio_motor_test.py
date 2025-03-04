@@ -53,11 +53,11 @@ pi.set_mode(m1_a1, pigpio.OUTPUT)
 pi.set_mode(m1_a2, pigpio.OUTPUT)
 pi.set_mode(m1_b1, pigpio.OUTPUT)
 pi.set_mode(m1_b2, pigpio.OUTPUT)
-pi.set_mode(m2_a1, pigpio.OUTPUT)
-pi.set_mode(m2_a2, pigpio.OUTPUT)
-pi.set_mode(m2_b1, pigpio.OUTPUT)
-pi.set_mode(m2_b2, pigpio.OUTPUT)
-pi.set_mode(laser_pin, pigpio.OUTPUT)
+#pi.set_mode(m2_a1, pigpio.OUTPUT)
+#pi.set_mode(m2_a2, pigpio.OUTPUT)
+#pi.set_mode(m2_b1, pigpio.OUTPUT)
+#pi.set_mode(m2_b2, pigpio.OUTPUT)
+#pi.set_mode(laser_pin, pigpio.OUTPUT)
 
 # INPUT pins (and set the PUD resistor)
 pi.set_mode(limit_y_end, pigpio.INPUT)
@@ -72,8 +72,8 @@ pi.set_pull_up_down(limit_x_move, pigpio.PUD_UP)
 # open SPI at 50k bps in mode 2
 # TODO: Figure out the modes!!!
 # http://abyz.me.uk/rpi/pigpio/python.html#spi_open
-pi.spi_open(m2_b1, 50000, 2)
-pi.spi_open(m1_a1, 50000, 2)
+# pi.spi_open(m2_b1, 50000, 2)
+pi.spi_open(1, 50000, 2)
 
 
 #######################################
@@ -82,7 +82,7 @@ pi.spi_open(m1_a1, 50000, 2)
 
 # Define the on/off positions for motor movement
 number_steps = 8
-seq = range(0, number_steps)
+seq = {}
 seq[0] = [0,1,0,0]
 seq[1] = [0,1,0,1]
 seq[2] = [0,0,0,1]
@@ -98,14 +98,12 @@ all_off = [0,0,0,0]
 def set_step(motor_pins, step_sequence):
     counter = 0
     for pin in motor_pins:
-        GPIO.output(pin, step_sequence[counter])
-        counter++
+        pi.write(pin, step_sequence[counter])
+        counter = counter + 1
 
 # Loops forward through the motor sequence
 def forward(motor, steps, delay):
     for i in range(steps):
-        if GPIO.event_detected(limit_pins):
-            break
         for j in range(number_steps):
             set_step(motor, seq[j])
             time.sleep(delay)
@@ -114,8 +112,6 @@ def forward(motor, steps, delay):
 # Loops backward through the motor sequence
 def backward(motor, steps, delay):
     for i in range(steps):
-        if GPIO.event_detected(limit_pins):
-            break
         for j in reversed(range(number_steps)):
             set_step(motor, seq[j])
             time.sleep(delay)
@@ -126,9 +122,9 @@ if __name__ == '__main__':
     while carry_on:
         delay = input("Time between micro-steps (ms)? ")
         steps = input("Number of full steps forward? ")
-        forward(motor1_pins, int(steps), int(delay) / 1000.0)
+        forward(m1_pins, int(steps), int(delay) / 1000.0)
         steps = input("Number of full steps backward? ")
-        backward(motor1_pins, int(steps), int(delay) / 1000.0)
+        backward(m1_pins, int(steps), int(delay) / 1000.0)
         keep_going = input("Run again? ")
         carry_on = keep_going.capitalize() == 'Yes' or keep_going.capitalize() == 'True'
 
