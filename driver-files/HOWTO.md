@@ -14,12 +14,12 @@ that. Bearing in mind several factors.
 ### Getting going
 
 The first thing to do, is to set up a virtual python environment to run from. To
-do that, if you are _not_ running an ubunto based system, you can run
+do that, if you are _not_ running an ubuntu based system, you can run
 ```
 python3 -m venv /path/to/venv
 ```
 
-If you _are_ running an ubunto based system (e.g. doing dev on WSL) you are
+If you _are_ running an ubuntu based system (e.g. doing dev on WSL) you are
 going to have to take some extra steps, as the `ensurepip` module is missing.
 
 ```
