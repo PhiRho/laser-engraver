@@ -3,8 +3,9 @@
 * XDriveEnd.stl
 * YDriveEnd.stl
 * XSlider.stl
-* YDriverBlock.stl
 * LooseYSlider.stl
 * FixedYSlider.stl
-* XDriverBlock.stl
+* X-Drive-NEMA17.stl
+* Y-Drive-NEMA-17.stl
+* LaserMountPlate.stl
 
