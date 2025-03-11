@@ -1,4 +1,5 @@
 import pigpio
+import time
 
 class LaserDefinition:
     """
@@ -55,15 +56,16 @@ class Motor:
         ms2: GPIO pin number for the ms2 signal
         ms3: GPIO pin number for the ms3 signal
     """
-    def __init__(self, step, direction, ms1, ms2, ms3):
+    def __init__(self, step, direction, ms1, ms2, ms3, pi):
         self.step = step
         self.direction = direction
         self.ms1 = ms1
         self.ms2 = ms2
         self.ms3 = ms3
+        self.pi = pi
+        self.enable_pins()
 
     def enable_pins(self):
-        self.pi = pigpio.pi()
         self.pi.set_mode(self.step, pigpio.OUTPUT)
         self.pi.set_mode(self.direction, pigpio.OUTPUT)
         self.pi.set_mode(self.ms1, pigpio.OUTPUT)
@@ -78,7 +80,14 @@ class Motor:
     def move(self, distance, speed):
         full_revolution = self.TEETH_PER_REVOLUTION * self.TOOTH_PITCH
         # Distance is a number of steps
-        step_count = (distance / full_revolution) * self.STEPS_PER_REVOLUTION
+        step_count = int(distance / full_revolution) * self.STEPS_PER_REVOLUTION
         # Speed is a number of steps per second
         steps_per_second = (speed / full_revolution) * self.STEPS_PER_REVOLUTION
-        step_delay = (1 / steps_per_second) / 1000.0 # convert to milliseconds
+        step_delay = (1 / steps_per_second) / 1000000.0 # convert to microseconds
+
+        if (step_delay > 100):
+            raise Exception("Step delay is too long: ", step_delay)
+
+        for i in range(step_count):
+            self.pi.gpio_trigger(self.step, 1, step_delay)
+            time.sleep(step_delay)
