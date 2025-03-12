@@ -1,6 +1,7 @@
 import logging
 import pigpio
 import time
+from enum import Enum
 
 class Motor:
     LOGGER = logging.getLogger(__name__)
@@ -12,10 +13,13 @@ class Motor:
         8: (1, 1, 0),
         16: (1, 1, 1)
     }
+
+    Direction = Enum("Direction", [("CLOCKWISE", 0), ("COUNTERCLOCKWISE", 1)])
     
     STEPS_PER_REVOLUTION = 200
     TEETH_PER_REVOLUTION = 20
     TOOTH_PITCH = 2 # mm
+    MM_PER_STEP = (TOOTH_PITCH * TEETH_PER_REVOLUTION) / STEPS_PER_REVOLUTION
     
     """
     A class to control a stepper motor. This assumes an A4988 stepper motor driver. 
@@ -51,38 +55,11 @@ class Motor:
         self.pi.write(self.ms3, self.MICROSTEP_MATRIX[microstep][2])
         self.LOGGER.info("Microstep set to: %s", microstep)
 
-    """
-    Attributes: 
-        distance: Distance to move in mm
-        speed: Speed to move at in mm/s
-    """
-    def move(self, distance, speed):
-        full_revolution = self.TEETH_PER_REVOLUTION * self.TOOTH_PITCH
-        # Distance is a number of steps
-        step_count = self.step_count_from_distance(distance)
-        # Speed is a number of steps per second, but we need to know the number of millis between steps
-        step_delay = self.step_delay_from_speed(speed)
+    def set_direction(self, direction):
+        self.pi.write(self.direction, direction.value)
+        self.LOGGER.info("Direction set to: %s", direction)
 
-        # Moving too fast or too slow is going to cause problems with the smoothness of the movement, and 
-        # will do interesting things to precision.
-        if (step_delay > (100 / 1000.0)):
-            raise Exception("Step delay is too long: ", step_delay)
-        elif (step_delay < (1 / 1000.0)):
-            raise Exception("Step delay is too short: ", step_delay)
-
-        for i in range(step_count):
-            self.pi.write(self.step, 1)
-            time.sleep(step_delay)
-            self.pi.write(self.step, 0)
-            time.sleep(step_delay)  
-
-    def step_count_from_distance(self, distance):
-        full_revolution = self.TEETH_PER_REVOLUTION * self.TOOTH_PITCH
-        return int(distance / full_revolution * self.STEPS_PER_REVOLUTION)
-
-    def step_delay_from_speed(self, speed):
-        full_revolution = self.TEETH_PER_REVOLUTION * self.TOOTH_PITCH
-        steps_per_second = (speed / full_revolution) * self.STEPS_PER_REVOLUTION
-        step_delay = (1.0 / steps_per_second) # Whilst the delay should be calculated in millis, the function works in seconds
-        return step_delay
-
+    def step_with_delay(self, delay):
+        self.pi.write(self.step, 1)
+        time.sleep(delay)
+        self.pi.write(self.step, 0)
