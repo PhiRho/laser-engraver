@@ -35,3 +35,8 @@ it, you can install dependencies with
 pip install -r requirements.txt
 ```
 
+### Running Tests
+IF you are doing dev work, and want to test functionality, make sure you are in
+the `driver-files` folder and run the `pytest` command to run all tests. Full
+pytest configuration can be found in `driver-files/pytest.ini`.
+

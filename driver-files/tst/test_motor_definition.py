@@ -1,5 +1,5 @@
 import pytest
-from laser_definition import Motor
+from src.motor_definition import Motor
 import pigpio
 import logging
 
