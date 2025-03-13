@@ -36,7 +36,13 @@ pip install -r requirements.txt
 ```
 
 ### Running Tests
-IF you are doing dev work, and want to test functionality, make sure you are in
+If you are doing dev work, and want to test functionality, make sure you are in
 the `driver-files` folder and run the `pytest` command to run all tests. Full
 pytest configuration can be found in `driver-files/pytest.ini`.
 
+### Configuring the pins you've wired
+Depending on the accessories you have connected to your device, and the exact device
+you are running with, you are going to want to define your own pin numbers for the 
+various aspects of the laser. For ease of use, you can define a `.ini` file and provide 
+it as an argument to the laser initialisation. Or you can can adjust the `default_pins.ini`
+file in your local setup. All sections are required for the engraver to function correctly.
