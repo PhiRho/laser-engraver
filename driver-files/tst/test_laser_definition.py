@@ -24,5 +24,16 @@ def test_step_delay_from_speed():
     laser_definition = LaserDefinition(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
     assert laser_definition.step_delay_from_speed(20) == 10 / 1000.0
 
+def test_move_x():
+    laser_definition = LaserDefinition(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
+    laser_definition.move_x(1, 1, Motor.Direction.CLOCKWISE)
+    assert laser_definition.location[0] == 1
+    laser_definition.move_x(1, 1, Motor.Direction.COUNTERCLOCKWISE)
+    assert laser_definition.location[0] <= 0.0001
 
-
+def test_interrupt_movement():
+    laser_definition = LaserDefinition(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
+    x_pos = laser_definition.location[0]
+    laser_definition.interrupt_movement(x_limits[1], 1, 0)
+    assert laser_definition.stop_motor == True
+    assert laser_definition.location[0] == x_pos - Motor.MM_PER_STEP

@@ -23,14 +23,23 @@ class LaserDefinition:
         self.pi = pi
         self.setup_pins()
         self.location = (0, 0)
+        self.stop_motor = False
 
     def setup_pins(self):
         self.pi.set_mode(self.x_limits[0], pigpio.INPUT)
+        self.pi.set_pull_up_down(self.x_limits[0], pigpio.PUD_UP)
         self.pi.set_mode(self.x_limits[1], pigpio.INPUT)
+        self.pi.set_pull_up_down(self.x_limits[1], pigpio.PUD_UP)
         self.pi.set_mode(self.y_limits[0], pigpio.INPUT)
+        self.pi.set_pull_up_down(self.y_limits[0], pigpio.PUD_UP)
         self.pi.set_mode(self.y_limits[1], pigpio.INPUT)
+        self.pi.set_pull_up_down(self.y_limits[1], pigpio.PUD_UP)
         self.pi.set_mode(self.laser_pin, pigpio.OUTPUT)
-        # TODO: Define event listeners
+
+        self.pi.callback(self.x_limits[0], pigpio.EITHER_EDGE, self.interrupt_movement)
+        self.pi.callback(self.x_limits[1], pigpio.EITHER_EDGE, self.interrupt_movement)
+        self.pi.callback(self.y_limits[0], pigpio.EITHER_EDGE, self.interrupt_movement)
+        self.pi.callback(self.y_limits[1], pigpio.EITHER_EDGE, self.interrupt_movement)
 
     """
     Moves both X and Y until the bump into specific limits, then sets that point as "home". 
@@ -39,16 +48,35 @@ class LaserDefinition:
         # TODO: Implement this
         pass
 
-    # TODO: interrupt motor movement on limit hit
+    def interrupt_movement(self, gpio, level, tick):
+        # TODO: Send signal to break loops
+        self.stop_motor = True
+        if gpio == self.x_limits[0]:
+            self.logger.info("X limit 0 hit")
+            self.move_x(0.2, 1, Motor.Direction.CLOCKWISE)
+        elif gpio == self.x_limits[1]:
+            self.logger.info("X limit 1 hit")
+            self.move_x(0.2, 1, Motor.Direction.COUNTERCLOCKWISE)
+        elif gpio == self.y_limits[0]:
+            self.logger.info("Y limit 0 hit")
+            self.move_y(0.2, 1, Motor.Direction.CLOCKWISE)
+        elif gpio == self.y_limits[1]:
+            self.logger.info("Y limit 1 hit")
+            self.move_y(0.2, 1, Motor.Direction.COUNTERCLOCKWISE)
+        self.logger.info("GPIO %s has changed state with level %s", gpio, level)
 
     """Move in a straight line along the X Axis"""
     def move_x(self, distance, speed, direction):
         self.x_motor.set_direction(direction)
         step_count = self.step_count_from_distance(distance)
         step_delay = self.step_delay_from_speed(speed)
+        if direction.value == Motor.Direction.CLOCKWISE.value:
+            step_size = Motor.MM_PER_STEP
+        else:
+            step_size = -Motor.MM_PER_STEP
         for i in range(step_count):
             self.x_motor.step_with_delay(step_delay)
-            self.location = (self.location[0] + Motor.MM_PER_STEP, self.location[1])
+            self.location = (self.location[0] + step_size, self.location[1])
 
     """
     Move in a stright line on the Y Axis

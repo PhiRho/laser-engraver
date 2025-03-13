@@ -20,3 +20,9 @@ class MockPi(pigpio.pi):
 
     def read(self, gpio):
         return self.assigned_gpio_values[gpio]
+
+    def set_pull_up_down(self, gpio, pud):
+        self.log.debug("set_pull_up_down %s %s", gpio, pud)
+
+    def callback(self, gpio, edge, callback):
+        self.log.debug("callback %s %s %s", gpio, edge, callback)
