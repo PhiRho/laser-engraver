@@ -2,7 +2,7 @@ import logging
 import pigpio
 from motor_definition import Motor
 
-class LaserDefinition:
+class Laser:
     logger = logging.getLogger(__name__)
     """
     A class to control a laser cutter's motors and laser module. This assumes NEMA 17 stepper motors.

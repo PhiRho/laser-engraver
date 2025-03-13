@@ -1,5 +1,5 @@
 import pytest
-from src.laser_definition import LaserDefinition
+from src.laser_definition import Laser
 from tst.mock_pi import MockPi
 from src.motor_definition import Motor
 
@@ -12,28 +12,28 @@ y_limits = (13, 14)
 laser_pin = 15
 
 def test_laser_definition_init():
-    laser_definition = LaserDefinition(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
-    assert laser_definition.pi == pi
+    laser = Laser(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
+    assert laser.pi == pi
 
 def test_step_count_from_distance():
-    laser_definition = LaserDefinition(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
-    assert laser_definition.step_count_from_distance(10) == 50
-    assert laser_definition.step_count_from_distance(0.5) == 2
+    laser = Laser(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
+    assert laser.step_count_from_distance(10) == 50
+    assert laser.step_count_from_distance(0.5) == 2
 
 def test_step_delay_from_speed():
-    laser_definition = LaserDefinition(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
-    assert laser_definition.step_delay_from_speed(20) == 10 / 1000.0
+    laser = Laser(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
+    assert laser.step_delay_from_speed(20) == 10 / 1000.0
 
 def test_move_x():
-    laser_definition = LaserDefinition(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
-    laser_definition.move_x(1, 1, Motor.Direction.CLOCKWISE)
-    assert laser_definition.location[0] == 1
-    laser_definition.move_x(1, 1, Motor.Direction.COUNTERCLOCKWISE)
-    assert laser_definition.location[0] <= 0.0001
+    laser = Laser(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
+    laser.move_x(1, 1, Motor.Direction.CLOCKWISE)
+    assert laser.location[0] == 1
+    laser.move_x(1, 1, Motor.Direction.COUNTERCLOCKWISE)
+    assert laser.location[0] <= 0.0001
 
 def test_interrupt_movement():
-    laser_definition = LaserDefinition(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
-    x_pos = laser_definition.location[0]
-    laser_definition.interrupt_movement(x_limits[1], 1, 0)
-    assert laser_definition.stop_motor == True
-    assert laser_definition.location[0] == x_pos - Motor.MM_PER_STEP
+    laser = Laser(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
+    x_pos = laser.location[0]
+    laser.interrupt_movement(x_limits[1], 1, 0)
+    assert laser.stop_motor == True
+    assert laser.location[0] == x_pos - Motor.MM_PER_STEP
