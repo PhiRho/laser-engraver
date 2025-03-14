@@ -21,6 +21,10 @@ class LaserShell(cmd.Cmd):
         'Initialise the Laser device with the specified config file: INITIALISE default_pins.ini'
         self.laser = initialise_laser(line)
 
+    def do_print(self, line):
+        'Print the current config: PRINT'
+        print(self.laser)
+
     def do_move_x(self, line):
         'Move the laser a distance (in mm) on the X Axis at speed (in mm/s) and with direction (+/-): MOVE_X 100 10 +'
         distance, speed, direction = parse_movement(line)

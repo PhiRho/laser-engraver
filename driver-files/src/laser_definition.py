@@ -82,12 +82,17 @@ class Laser:
     def move_y(self, distance, speed, direction):
         self.x_motor.set_direction(direction)
         self.y_motor.set_direction(direction)
+        self.y_motor.set_microstep(1)
         step_count = self.step_count_from_distance(distance)
         step_delay = self.step_delay_from_speed(speed)
+        if direction.value == Motor.Direction.CLOCKWISE.value:
+            step_size = Motor.MM_PER_STEP
+        else:
+            step_size = -Motor.MM_PER_STEP
         for i in range(step_count):
             self.x_motor.step_with_delay(step_delay)
             self.y_motor.step_with_delay(step_delay)
-            self.location = (self.location[0], self.location[1] + Motor.MM_PER_STEP)
+            self.location = (self.location[0], self.location[1] + step_size)
 
     """Auto generated, needs serious checks"""
     def arc_clockwise(self, radius, angle, speed):
