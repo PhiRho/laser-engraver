@@ -1,6 +1,6 @@
 import pytest
 from src.laser_definition import Laser
-from tst.mock_pi import MockPi
+from src.mock_pi import MockPi
 from src.motor_definition import Motor
 
 # Important to note, all of these pin numbers are dummies. DO NOT USE THEM ON A REAL PI.

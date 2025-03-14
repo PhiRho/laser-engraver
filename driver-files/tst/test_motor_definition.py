@@ -1,7 +1,7 @@
 import pytest
 import time
 from src.motor_definition import Motor
-from tst.mock_pi import MockPi
+from src.mock_pi import MockPi
 
 pi = MockPi()
 

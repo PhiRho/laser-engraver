@@ -93,9 +93,42 @@ class Laser:
             self.y_motor.step_with_delay(step_delay)
             self.location = (self.location[0], self.location[1] + Motor.MM_PER_STEP)
 
+    """Auto generated, needs serious checks"""
     def arc_clockwise(self, radius, angle, speed):
-        # TODO: Use the right distance-speed combos on x/y to get an arc
-        pass
+        """Move in a clockwise arc with given radius (mm), angle (degrees) and speed (mm/s)"""
+        import math
+        
+        # Convert angle to radians for math functions
+        angle_rad = math.radians(angle)
+        
+        # Calculate arc length and coordinates
+        arc_length = radius * angle_rad
+        num_segments = int(arc_length / (Motor.MM_PER_STEP * 2))  # Divide into small segments
+        
+        for i in range(num_segments):
+            segment_angle = angle_rad * i / num_segments
+            # Calculate x,y coordinates for this segment
+            x = radius * (1 - math.cos(segment_angle))  # Distance from start in x
+            y = radius * math.sin(segment_angle)        # Distance from start in y
+            
+            # Calculate deltas from previous position
+            if i > 0:
+                dx = x - prev_x
+                dy = y - prev_y
+                
+                # Move x and y by the delta amounts
+                if dx > 0:
+                    self.move_x(abs(dx), speed, Motor.Direction.CLOCKWISE)
+                else:
+                    self.move_x(abs(dx), speed, Motor.Direction.COUNTERCLOCKWISE)
+                    
+                if dy > 0:
+                    self.move_y(abs(dy), speed, Motor.Direction.CLOCKWISE) 
+                else:
+                    self.move_y(abs(dy), speed, Motor.Direction.COUNTERCLOCKWISE)
+            
+            prev_x = x
+            prev_y = y
 
     def arc_counterclockwise(self, radius, angle, speed):
         # TODO: Use the right distance-speed combos on x/y to get an arc
