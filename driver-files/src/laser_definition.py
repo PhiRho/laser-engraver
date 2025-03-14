@@ -11,14 +11,14 @@ class Laser:
         x_motor: Motor which moves the laser cutter in the x direction
         y_motor: Motor which moves the laser cutter in the y direction
         x_limits: Tuple of GPIO pins for movement limits
-        y_limits: Tuple of GPIO pins for end limits
+        y_limit: Pin number for end limit
         laser_pin: GPIO pin number for controlling the laser module
     """
-    def __init__(self, x_motor, y_motor, x_limits, y_limits, laser_pin, pi):
+    def __init__(self, x_motor, y_motor, x_limits, y_limit, laser_pin, pi):
         self.x_motor = x_motor
         self.y_motor = y_motor
         self.x_limits = x_limits
-        self.y_limits = y_limits
+        self.y_limit = y_limit
         self.laser_pin = laser_pin
         self.pi = pi
         self.setup_pins()
@@ -30,16 +30,12 @@ class Laser:
         self.pi.set_pull_up_down(self.x_limits[0], pigpio.PUD_UP)
         self.pi.set_mode(self.x_limits[1], pigpio.INPUT)
         self.pi.set_pull_up_down(self.x_limits[1], pigpio.PUD_UP)
-        self.pi.set_mode(self.y_limits[0], pigpio.INPUT)
-        self.pi.set_pull_up_down(self.y_limits[0], pigpio.PUD_UP)
-        self.pi.set_mode(self.y_limits[1], pigpio.INPUT)
-        self.pi.set_pull_up_down(self.y_limits[1], pigpio.PUD_UP)
-        self.pi.set_mode(self.laser_pin, pigpio.OUTPUT)
+        self.pi.set_mode(self.y_limit, pigpio.INPUT)
+        self.pi.set_pull_up_down(self.y_limit, pigpio.PUD_UP)
 
         self.pi.callback(self.x_limits[0], pigpio.EITHER_EDGE, self.interrupt_movement)
         self.pi.callback(self.x_limits[1], pigpio.EITHER_EDGE, self.interrupt_movement)
-        self.pi.callback(self.y_limits[0], pigpio.EITHER_EDGE, self.interrupt_movement)
-        self.pi.callback(self.y_limits[1], pigpio.EITHER_EDGE, self.interrupt_movement)
+        self.pi.callback(self.y_limit, pigpio.EITHER_EDGE, self.interrupt_movement)
 
     """
     Moves both X and Y until the bump into specific limits, then sets that point as "home". 
