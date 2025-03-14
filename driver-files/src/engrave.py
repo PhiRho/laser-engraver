@@ -77,11 +77,11 @@ def initialise_laser(config_file):
 
     limit_pins = config['limits']
     x_limits = (int(limit_pins['x_one']), int(limit_pins['x_two']))
-    y_limits = (int(limit_pins['y_one']), None)
+    y_limit = int(limit_pins['y_one'])
 
     laser_pin = int(config['laser']['enable'])
 
-    return Laser(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
+    return Laser(x_motor, y_motor, x_limits, y_limit, laser_pin, pi)
 
 
 
