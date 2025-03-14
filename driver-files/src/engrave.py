@@ -73,13 +73,13 @@ def initialise_laser(config_file):
     x_motor = Motor(int(x_motor_pins['step']), int(x_motor_pins['direction']), int(x_motor_pins['ms1']), int(x_motor_pins['ms2']), int(x_motor_pins['ms3']), pi)
 
     y_motor_pins = config['ymotor']
-    y_motor = Motor(y_motor_pins['step'], y_motor_pins['direction'], y_motor_pins['ms1'], y_motor_pins['ms2'], y_motor_pins['ms3'], pi)
+    y_motor = Motor(int(y_motor_pins['step']), int(y_motor_pins['direction']), int(y_motor_pins['ms1']), int(y_motor_pins['ms2']), int(y_motor_pins['ms3']), pi)
 
     limit_pins = config['limits']
     x_limits = (int(limit_pins['x_one']), int(limit_pins['x_two']))
     y_limits = (int(limit_pins['y_one']), None)
 
-    laser_pin = config['laser']['enable']
+    laser_pin = int(config['laser']['enable'])
 
     return Laser(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
 
