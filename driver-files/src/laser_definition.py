@@ -34,15 +34,15 @@ class Laser:
         self.pi.set_mode(self.y_limit, pigpio.INPUT)
         self.pi.set_pull_up_down(self.y_limit, pigpio.PUD_UP)
 
-        self.pi.callback(self.x_limits[0], pigpio.EITHER_EDGE, self.interrupt_movement)
-        self.pi.callback(self.x_limits[1], pigpio.EITHER_EDGE, self.interrupt_movement)
-        self.pi.callback(self.y_limit, pigpio.EITHER_EDGE, self.interrupt_movement)
+        self.pi.callback(self.x_limits[0], pigpio.FALLING_EDGE, self.interrupt_movement)
+        self.pi.callback(self.x_limits[1], pigpio.FALLING_EDGE, self.interrupt_movement)
+        self.pi.callback(self.y_limit, pigpio.FALLING_EDGE, self.interrupt_movement)
 
     """
     Moves both X and Y until the bump into specific limits, then sets that point as "home". 
     """
     def find_home(self):
-        self.move_x(300, 30, Motor.Direction.COUNTERCLOCKWISE)
+        self.move_x(300, 30, Motor.Direction.CLOCKWISE)
         self.location[0] = 0
         self.move_y(600, 30, Motor.Direction.CLOCKWISE)
         self.location[1] = 0
@@ -52,13 +52,13 @@ class Laser:
         time.sleep(0.01)
         if gpio == self.x_limits[0]:
             self.logger.info("X limit 0 hit")
-            self.move_x(0.2, 1, Motor.Direction.COUNTERCLOCKWISE)
+            self.move_x(2, 1, Motor.Direction.COUNTERCLOCKWISE)
         elif gpio == self.x_limits[1]:
             self.logger.info("X limit 1 hit")
-            self.move_x(0.2, 1, Motor.Direction.CLOCKWISE)
+            self.move_x(2, 1, Motor.Direction.CLOCKWISE)
         elif gpio == self.y_limit:
             self.logger.info("Y limit hit")
-            self.move_y(0.2, 1, Motor.Direction.CLOCKWISE)
+            self.move_y(2, 1, Motor.Direction.CLOCKWISE)
         self.logger.info("GPIO %s has changed state with level %s", gpio, level)
         self.stop_motor = True
 
