@@ -17,6 +17,10 @@ class LaserShell(cmd.Cmd):
         super().__init__()
         self.laser = None
 
+    """Do not repeat the previous command (see https://docs.python.org/3/library/cmd.html#cmd.Cmd.emptyline)"""
+    def emptyline(self):
+        return
+
     def do_init(self, line):
         'Initialise the Laser device with the specified config file: init default_pins.ini'
         self.laser = initialise_laser(line)

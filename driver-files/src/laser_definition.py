@@ -47,19 +47,23 @@ class Laser:
         self.move_y(600, 30, Motor.Direction.CLOCKWISE)
         self.location[1] = 0
 
+    """
+    Called by `pigpio` when one of the limit switches is depressed. Required to ensure that the 
+    motors cannot overshoot their bounds.
+    """
     def interrupt_movement(self, gpio, level, tick):
         self.stop_motor = True
         time.sleep(0.01)
         self.logger.info(f"GPIO {gpio} has changed state with level {level}")
         if gpio == self.x_limits[0]:
             self.logger.info("X limit 0 hit")
-            self.move_x(10, 1, Motor.Direction.COUNTERCLOCKWISE)
+            self.move_x(10, 100, Motor.Direction.COUNTERCLOCKWISE)
         elif gpio == self.x_limits[1]:
             self.logger.info("X limit 1 hit")
-            self.move_x(10, 1, Motor.Direction.CLOCKWISE)
+            self.move_x(10, 100, Motor.Direction.CLOCKWISE)
         elif gpio == self.y_limit:
             self.logger.info("Y limit hit")
-            self.move_y(10, 1, Motor.Direction.CLOCKWISE)
+            self.move_y(10, 100, Motor.Direction.CLOCKWISE)
         self.logger.info(f"Motor move back 10mm")
         self.stop_motor = True
 
