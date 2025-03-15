@@ -18,37 +18,49 @@ class LaserShell(cmd.Cmd):
         self.laser = None
 
     def do_init(self, line):
-        'Initialise the Laser device with the specified config file: INITIALISE default_pins.ini'
+        'Initialise the Laser device with the specified config file: init default_pins.ini'
         self.laser = initialise_laser(line)
 
     def do_print(self, line):
-        'Print the current config: PRINT'
+        'Print the current config: print'
         print(self.laser)
 
     def do_move_x(self, line):
-        'Move the laser a distance (in mm) on the X Axis at speed (in mm/s) and with direction (+/-): MOVE_X 100 10 +'
+        'Move the laser a distance (in mm) on the X Axis at speed (in mm/s) and with direction (+/-): move_x 100 10 +'
         distance, speed, direction = parse_movement(line)
         self.laser.move_x(distance, speed, direction)
 
     def do_move_y(self, line):
-        'Move the laser a distance (in mm) on the Y Axis at speed (in mm/s) and with direction (+/-): MOVE_Y 100 10 +'
+        'Move the laser a distance (in mm) on the Y Axis at speed (in mm/s) and with direction (+/-): move_y 100 10 +'
         distance, speed, direction = parse_movement(line)
         self.laser.move_y(distance, speed, direction)
 
+    def do_cw_arc(self, line):
+        'Move the laser in a clockwise arc with given radius (mm), angle (degrees) and speed (mm/s): cw_arc 100 45 10'
+        radius, angle, speed = parse_arc(line)
+        self.laser.arc_clockwise(radius, angle, speed)
+
+    def do_home(self, line):
+        'Move the laser to the home position: home'
+        self.laser.find_home()
+
     def do_quit(self, line):
-        'Quit the engraver: QUIT'
+        'Quit the engraver: quit'
         if self.laser is not None:
             self.laser.pi.stop()
         return True
 
 def parse_movement(line):
-    'Parse the movement command: MOVE_X 100 10 +'
     distance, speed, direction = line.split()
     if direction == "+":
-        direction = Motor.Direction.CLOCKWISE
-    else:
         direction = Motor.Direction.COUNTERCLOCKWISE
+    else:
+        direction = Motor.Direction.CLOCKWISE
     return int(distance), int(speed), direction
+
+def parse_arc(line):
+    radius, angle, speed = line.split()
+    return int(radius), int(angle), int(speed)
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
