@@ -23,12 +23,12 @@ class LaserShell(cmd.Cmd):
 
     def do_print(self, line):
         'Print the current config: print'
-        print("Location is currently %s", self.laser.location)
-        print("Motor X defined as %s", self.laser.x_motor)
-        print("Motor Y defined as %s", self.laser.y_motor)
-        print("X limits defined as %s", self.laser.x_limits)
-        print("Y limit defined as %s", self.laser.y_limit)
-        print("Laser pin defined as %s", self.laser.laser_pin)
+        print(f"Location is currently {self.laser.location}")
+        print(f"Motor X defined as {self.laser.x_motor}")
+        print(f"Motor Y defined as {self.laser.y_motor}")
+        print(f"X limits defined as {self.laser.x_limits}")
+        print(f"Y limit defined as {self.laser.y_limit}")
+        print(f"Laser pin defined as {self.laser.laser_pin}")
 
     def do_move_x(self, line):
         'Move the laser a distance (in mm) on the X Axis at speed (in mm/s) and with direction (+/-): move_x 100 10 +'
@@ -75,11 +75,11 @@ def main():
 
 def initialise_laser(config_file):
     if not os.path.exists(config_file):
-        logger.error("Config file %s not found", config_file)
+        logger.error(f"Config file {config_file} not found")
         return None
     config = configparser.ConfigParser()
     config.read(config_file)
-    logger.info("Found sections %s", config.sections())
+    logger.info(f"Found sections {config.sections()}")
 
     if config.has_section('pi'):
         logger.info("Config has optional pi section")

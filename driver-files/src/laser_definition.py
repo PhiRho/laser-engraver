@@ -39,7 +39,7 @@ class Laser:
         self.pi.callback(self.y_limit, pigpio.FALLING_EDGE, self.interrupt_movement)
 
     """
-    Moves both X and Y until the bump into specific limits, then sets that point as "home". 
+    Moves both X and Y until they bump into specific limits, then sets that point as "home". 
     """
     def find_home(self):
         self.move_x(300, 30, Motor.Direction.CLOCKWISE)
@@ -50,16 +50,17 @@ class Laser:
     def interrupt_movement(self, gpio, level, tick):
         self.stop_motor = True
         time.sleep(0.01)
+        self.logger.info(f"GPIO {gpio} has changed state with level {level}")
         if gpio == self.x_limits[0]:
             self.logger.info("X limit 0 hit")
-            self.move_x(2, 1, Motor.Direction.COUNTERCLOCKWISE)
+            self.move_x(10, 1, Motor.Direction.COUNTERCLOCKWISE)
         elif gpio == self.x_limits[1]:
             self.logger.info("X limit 1 hit")
-            self.move_x(2, 1, Motor.Direction.CLOCKWISE)
+            self.move_x(10, 1, Motor.Direction.CLOCKWISE)
         elif gpio == self.y_limit:
             self.logger.info("Y limit hit")
-            self.move_y(2, 1, Motor.Direction.CLOCKWISE)
-        self.logger.info("GPIO %s has changed state with level %s", gpio, level)
+            self.move_y(10, 1, Motor.Direction.CLOCKWISE)
+        self.logger.info(f"Motor move back 10mm")
         self.stop_motor = True
 
     """Move in a straight line along the X Axis"""
@@ -75,7 +76,7 @@ class Laser:
         for i in range(step_count):
             if self.stop_motor:
                 self.logger.warn("Motor interrupted by limit")
-                return
+                break
             self.x_motor.step_with_delay(step_delay)
             self.location = (self.location[0] + step_size, self.location[1])
 
@@ -98,10 +99,10 @@ class Laser:
         for i in range(step_count):
             if self.stop_motor:
                 self.logger.warn("Motor interrupted by limit")
-                return
+                break
             if self.location[1] + step_size > 650:
                 self.logger.warn("Reached limit enforced by software on Y-Axis")
-                return
+                break
             self.x_motor.step_with_delay(step_delay)
             self.y_motor.step_with_delay(step_delay)
             self.location = (self.location[0], self.location[1] + step_size)
