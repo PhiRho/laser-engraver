@@ -23,7 +23,12 @@ class LaserShell(cmd.Cmd):
 
     def do_print(self, line):
         'Print the current config: print'
-        print(self.laser)
+        print("Location is currently %s", self.laser.location)
+        print("Motor X defined as %s", self.laser.x_motor)
+        print("Motor Y defined as %s", self.laser.y_motor)
+        print("X limits defined as %s", self.laser.x_limits)
+        print("Y limit defined as %s", self.laser.y_limit)
+        print("Laser pin defined as %s", self.laser.laser_pin)
 
     def do_move_x(self, line):
         'Move the laser a distance (in mm) on the X Axis at speed (in mm/s) and with direction (+/-): move_x 100 10 +'
