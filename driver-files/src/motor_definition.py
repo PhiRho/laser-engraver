@@ -15,14 +15,14 @@ class Motor:
     }
 
     Direction = Enum("Direction", [("CLOCKWISE", 0), ("COUNTERCLOCKWISE", 1)])
-    
+
     STEPS_PER_REVOLUTION = 200
     TEETH_PER_REVOLUTION = 20
     TOOTH_PITCH = 2 # mm
     MM_PER_STEP = (TOOTH_PITCH * TEETH_PER_REVOLUTION) / STEPS_PER_REVOLUTION
-    
+
     """
-    A class to control a stepper motor. This assumes an A4988 stepper motor driver. 
+    A class to control a stepper motor. This assumes an A4988 stepper motor driver.
 
     Attributes:
         step: GPIO pin number for the step signal
@@ -63,3 +63,8 @@ class Motor:
         self.pi.write(self.step, 1)
         time.sleep(delay)
         self.pi.write(self.step, 0)
+
+    def __str__(self):
+        direction_state = self.pi.read(self.direction)
+        direction = "COUNTERCLOCKWISE" if direction_state == 1 else "CLOCKWISE"
+        return f"Motor(step={self.step}, direction={self.direction}[{direction}], ms1={self.ms1}, ms2={self.ms2}, ms3={self.ms3})"

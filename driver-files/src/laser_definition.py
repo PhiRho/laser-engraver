@@ -38,17 +38,11 @@ class Laser:
         self.pi.callback(self.x_limits[1], pigpio.FALLING_EDGE, self.interrupt_movement)
         self.pi.callback(self.y_limit, pigpio.FALLING_EDGE, self.interrupt_movement)
 
-    """
-    Moves both X and Y until they bump into specific limits, then sets that point as "home". 
-    """
-    def find_home(self):
-        self.move_x(300, 30, Motor.Direction.CLOCKWISE)
-        self.location[0] = 0
-        self.move_y(600, 30, Motor.Direction.CLOCKWISE)
-        self.location[1] = 0
+    def set_home(self):
+        self.location = (0, 0)
 
     """
-    Called by `pigpio` when one of the limit switches is depressed. Required to ensure that the 
+    Called by `pigpio` when one of the limit switches is depressed. Required to ensure that the
     motors cannot overshoot their bounds.
     """
     def interrupt_movement(self, gpio, level, tick):
@@ -63,7 +57,7 @@ class Laser:
             self.move_x(10, 100, Motor.Direction.CLOCKWISE)
         elif gpio == self.y_limit:
             self.logger.info("Y limit hit")
-            self.move_y(10, 100, Motor.Direction.CLOCKWISE)
+            self.move_y(10, 100, Motor.Direction.COUNTERCLOCKWISE)
         self.logger.info(f"Motor move back 10mm")
         self.stop_motor = True
 
@@ -86,7 +80,7 @@ class Laser:
 
     """
     Move in a stright line on the Y Axis
-    As long as the delay is small enough, the line will be straight. 
+    As long as the delay is small enough, the line will be straight.
     But since the motors are not being triggered in parallel this is an approximation at best.
     """
     def move_y(self, distance, speed, direction):
@@ -96,9 +90,9 @@ class Laser:
         step_count = self.step_count_from_distance(distance)
         step_delay = self.step_delay_from_speed(speed)
         if direction.value == Motor.Direction.CLOCKWISE.value:
-            step_size = Motor.MM_PER_STEP
-        else:
             step_size = -Motor.MM_PER_STEP
+        else:
+            step_size = Motor.MM_PER_STEP
         self.stop_motor = False
         for i in range(step_count):
             if self.stop_motor:
@@ -111,40 +105,118 @@ class Laser:
             self.y_motor.step_with_delay(step_delay)
             self.location = (self.location[0], self.location[1] + step_size)
 
+    def move_angle(self, distance, speed, angle):
+        """
+        Move in a straight line at the specified angle (in degrees) for the given distance (mm) at speed (mm/s)
+        Angle is measured from positive x-axis (0 degrees) counterclockwise
+        """
+        import math
+
+        # Convert angle to radians
+        angle_rad = math.radians(angle)
+
+        # Calculate x and y components
+        x_dist = distance * math.cos(angle_rad)
+        y_dist = distance * math.sin(angle_rad)
+
+        # Determine x direction
+        if x_dist >= 0:
+            x_direction = Motor.Direction.COUNTERCLOCKWISE
+        else:
+            x_direction = Motor.Direction.CLOCKWISE
+
+        # Determine y direction
+        if y_dist >= 0:
+            y_direction = Motor.Direction.CLOCKWISE
+        else:
+            y_direction = Motor.Direction.COUNTERCLOCKWISE
+
+        # Set motor directions
+        self.x_motor.set_direction(x_direction)
+        self.y_motor.set_direction(y_direction)
+
+        # Calculate steps needed for each axis
+        x_steps = self.step_count_from_distance(x_dist)
+        y_steps = self.step_count_from_distance(y_dist)
+
+        # Calculate step delay based on total distance and speed
+        step_delay = self.step_delay_from_speed(speed)
+
+        # Track position changes for location updates
+        x_step_size = Motor.MM_PER_STEP if x_direction == Motor.Direction.COUNTERCLOCKWISE else -Motor.MM_PER_STEP
+        y_step_size = Motor.MM_PER_STEP if y_direction == Motor.Direction.CLOCKWISE else -Motor.MM_PER_STEP
+
+        # Use the longer axis for the main loop
+        total_steps = max(x_steps, y_steps)
+        if total_steps == 0:
+            return
+
+        # Calculate step ratios
+        x_ratio = x_steps / total_steps
+        y_ratio = y_steps / total_steps
+
+        x_accumulator = 0
+        y_accumulator = 0
+
+        self.stop_motor = False
+        for i in range(total_steps):
+            if self.stop_motor:
+                self.logger.warn("Motor interrupted by limit")
+                break
+
+            # Check Y axis limit
+            if y_step_size > 0 and self.location[1] + y_step_size > 650:
+                self.logger.warn("Reached limit enforced by software on Y-Axis")
+                break
+
+            # Accumulate step fractions and step when they exceed 1
+            x_accumulator += x_ratio
+            y_accumulator += y_ratio
+
+            if x_accumulator >= 1:
+                self.x_motor.step_with_delay(step_delay)
+                self.location = (self.location[0] + x_step_size, self.location[1])
+                x_accumulator -= 1
+
+            if y_accumulator >= 1:
+                self.y_motor.step_with_delay(step_delay)
+                self.location = (self.location[0], self.location[1] + y_step_size)
+                y_accumulator -= 1
+
     """Auto generated, needs serious checks"""
     def arc_clockwise(self, radius, angle, speed):
         """Move in a clockwise arc with given radius (mm), angle (degrees) and speed (mm/s)"""
         import math
-        
+
         # Convert angle to radians for math functions
         angle_rad = math.radians(angle)
-        
+
         # Calculate arc length and coordinates
         arc_length = radius * angle_rad
         num_segments = int(arc_length / (Motor.MM_PER_STEP * 2))  # Divide into small segments
-        
+
         for i in range(num_segments):
             segment_angle = angle_rad * i / num_segments
             # Calculate x,y coordinates for this segment
             x = radius * (1 - math.cos(segment_angle))  # Distance from start in x
             y = radius * math.sin(segment_angle)        # Distance from start in y
-            
+
             # Calculate deltas from previous position
             if i > 0:
                 dx = x - prev_x
                 dy = y - prev_y
-                
+
                 # Move x and y by the delta amounts
                 if dx > 0:
                     self.move_x(abs(dx), speed, Motor.Direction.CLOCKWISE)
                 else:
                     self.move_x(abs(dx), speed, Motor.Direction.COUNTERCLOCKWISE)
-                    
+
                 if dy > 0:
-                    self.move_y(abs(dy), speed, Motor.Direction.CLOCKWISE) 
+                    self.move_y(abs(dy), speed, Motor.Direction.CLOCKWISE)
                 else:
                     self.move_y(abs(dy), speed, Motor.Direction.COUNTERCLOCKWISE)
-            
+
             prev_x = x
             prev_y = y
 

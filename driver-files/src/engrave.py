@@ -36,12 +36,12 @@ class LaserShell(cmd.Cmd):
 
     def do_move_x(self, line):
         'Move the laser a distance (in mm) on the X Axis at speed (in mm/s) and with direction (+/-): move_x 100 10 +'
-        distance, speed, direction = parse_movement(line)
+        distance, speed, direction = parse_x_movement(line)
         self.laser.move_x(distance, speed, direction)
 
     def do_move_y(self, line):
         'Move the laser a distance (in mm) on the Y Axis at speed (in mm/s) and with direction (+/-): move_y 100 10 +'
-        distance, speed, direction = parse_movement(line)
+        distance, speed, direction = parse_y_movement(line)
         self.laser.move_y(distance, speed, direction)
 
     def do_cw_arc(self, line):
@@ -50,8 +50,13 @@ class LaserShell(cmd.Cmd):
         self.laser.arc_clockwise(radius, angle, speed)
 
     def do_home(self, line):
-        'Move the laser to the home position: home'
-        self.laser.find_home()
+        'Set the current location as home (0,0): home'
+        self.laser.set_home()
+
+    def do_angle(self, line):
+        'Move the laser in a straight line for a given distance, with a given speed, at a given angle (degrees): angle 100 45 10'
+        distance, speed, angle = parse_angle(line)
+        self.laser.move_angle(distance, speed, angle)
 
     def do_quit(self, line):
         'Quit the engraver: quit'
@@ -59,9 +64,21 @@ class LaserShell(cmd.Cmd):
             self.laser.pi.stop()
         return True
 
-def parse_movement(line):
+def parse_angle(line):
+    distance, speed, angle = line.split()
+    return int(distance), int(speed), int(angle)
+
+def parse_x_movement(line):
     distance, speed, direction = line.split()
     if direction == "+":
+        direction = Motor.Direction.COUNTERCLOCKWISE
+    else:
+        direction = Motor.Direction.CLOCKWISE
+    return int(distance), int(speed), direction
+
+def parse_y_movement(line):
+    distance, speed, direction = line.split()
+    if direction == "-":
         direction = Motor.Direction.COUNTERCLOCKWISE
     else:
         direction = Motor.Direction.CLOCKWISE

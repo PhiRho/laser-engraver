@@ -37,3 +37,17 @@ def test_interrupt_movement():
     laser.interrupt_movement(x_limits[1], 1, 0)
     assert laser.stop_motor == True
     assert round(laser.location[0]) == x_pos - 10
+
+def test_move_y():
+    laser = Laser(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
+    laser.move_y(1, 1, Motor.Direction.CLOCKWISE)
+    assert laser.location[1] == -1
+    laser.move_y(1, 1, Motor.Direction.COUNTERCLOCKWISE)
+    assert laser.location[1] <= 0.0001
+
+def test_move_angle():
+    laser = Laser(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
+    laser.move_angle(5, 1, 37)
+    assert pytest.approx(laser.location[0], 0.0001) == 3.8
+    assert pytest.approx(laser.location[1], 0.0001) == 3
+
