@@ -53,11 +53,11 @@ class Motor:
         self.pi.write(self.ms1, self.MICROSTEP_MATRIX[microstep][0])
         self.pi.write(self.ms2, self.MICROSTEP_MATRIX[microstep][1])
         self.pi.write(self.ms3, self.MICROSTEP_MATRIX[microstep][2])
-        self.LOGGER.info("Microstep set to: %s", microstep)
+        self.LOGGER.debug("Microstep set to: %s", microstep)
 
     def set_direction(self, direction):
         self.pi.write(self.direction, direction.value)
-        self.LOGGER.info("Direction set to: %s", direction)
+        self.LOGGER.debug("Direction set to: %s", direction)
 
     def step_with_delay(self, delay):
         self.pi.write(self.step, 1)

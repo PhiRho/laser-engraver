@@ -1,7 +1,10 @@
 import logging
+import math
 import pigpio
 import time
+import numpy as np
 from motor_definition import Motor
+import pytest
 
 class Laser:
     logger = logging.getLogger(__name__)
@@ -105,39 +108,50 @@ class Laser:
             self.y_motor.step_with_delay(step_delay)
             self.location = (self.location[0], self.location[1] + step_size)
 
+    """
+    Move in a straight line at the specified angle (in degrees) for the given distance (mm) at speed (mm/s)
+    Angle is measured from positive x-axis (0 degrees) counterclockwise
+    """
     def move_angle(self, distance, speed, angle):
-        """
-        Move in a straight line at the specified angle (in degrees) for the given distance (mm) at speed (mm/s)
-        Angle is measured from positive x-axis (0 degrees) counterclockwise
-        """
-        import math
+        # Normalize angle to 0-360
+        angle = angle % 360
 
-        # Convert angle to radians
-        angle_rad = math.radians(angle)
+        # Handle cardinal directions
+        cardinal_directions = {
+            90: lambda: self.move_y(distance, speed, Motor.Direction.COUNTERCLOCKWISE),
+            180: lambda: self.move_x(distance, speed, Motor.Direction.CLOCKWISE),
+            270: lambda: self.move_y(distance, speed, Motor.Direction.CLOCKWISE),
+            0: lambda: self.move_x(distance, speed, Motor.Direction.COUNTERCLOCKWISE),
+            360: lambda: self.move_x(distance, speed, Motor.Direction.COUNTERCLOCKWISE)
+        }
 
-        # Calculate x and y components
-        x_dist = distance * math.cos(angle_rad)
-        y_dist = distance * math.sin(angle_rad)
+        if angle in cardinal_directions:
+            return cardinal_directions[angle]()
 
-        # Determine x direction
-        if x_dist >= 0:
-            x_direction = Motor.Direction.COUNTERCLOCKWISE
-        else:
-            x_direction = Motor.Direction.CLOCKWISE
+        # Calculate quadrant-specific values
+        quadrant_data = {
+            (0, 90): (0, math.cos, math.sin, Motor.Direction.COUNTERCLOCKWISE, Motor.Direction.CLOCKWISE),
+            (90, 180): (90, math.sin, math.cos, Motor.Direction.CLOCKWISE, Motor.Direction.CLOCKWISE),
+            (180, 270): (180, math.sin, math.cos, Motor.Direction.CLOCKWISE, Motor.Direction.COUNTERCLOCKWISE),
+            (270, 360): (270, math.cos, math.sin, Motor.Direction.COUNTERCLOCKWISE, Motor.Direction.COUNTERCLOCKWISE)
+        }
 
-        # Determine y direction
-        if y_dist >= 0:
-            y_direction = Motor.Direction.CLOCKWISE
-        else:
-            y_direction = Motor.Direction.COUNTERCLOCKWISE
+        # Find the correct quadrant
+        for (start, end), (subtract, x_func, y_func, x_dir, y_dir) in quadrant_data.items():
+            if start < angle < end:
+                angle_rad = math.radians(angle - subtract)
+                x_dist = distance * x_func(angle_rad)
+                y_dist = distance * y_func(angle_rad)
+                x_direction, y_direction = x_dir, y_dir
+                break
 
-        # Set motor directions
+        # Set the direction of the motors
         self.x_motor.set_direction(x_direction)
         self.y_motor.set_direction(y_direction)
 
         # Calculate steps needed for each axis
-        x_steps = self.step_count_from_distance(x_dist)
-        y_steps = self.step_count_from_distance(y_dist)
+        x_steps = self.step_count_from_distance(round(x_dist, 3))
+        y_steps = self.step_count_from_distance(round(y_dist, 3))
 
         # Calculate step delay based on total distance and speed
         step_delay = self.step_delay_from_speed(speed)
@@ -183,49 +197,108 @@ class Laser:
                 self.location = (self.location[0], self.location[1] + y_step_size)
                 y_accumulator -= 1
 
-    """Auto generated, needs serious checks"""
-    def arc_clockwise(self, radius, angle, speed):
-        """Move in a clockwise arc with given radius (mm), angle (degrees) and speed (mm/s)"""
-        import math
+    def _safe_sqrt(self, x):
+        """Safely calculate square root, handling negative values."""
+        return np.sqrt(max(0, x))
 
-        # Convert angle to radians for math functions
-        angle_rad = math.radians(angle)
+    def _calculate_next_arc_point(self, current_point, center_x, center_y, radius, step_size):
+        """Calculate the next point on a clockwise arc.
 
-        # Calculate arc length and coordinates
-        arc_length = radius * angle_rad
-        num_segments = int(arc_length / (Motor.MM_PER_STEP * 2))  # Divide into small segments
+        Args:
+            current_point: [x, y] list of current position
+            center_x, center_y: Center point of the arc
+            radius: Radius of the arc
+            step_size: Distance to move in x direction
 
-        for i in range(num_segments):
-            segment_angle = angle_rad * i / num_segments
-            # Calculate x,y coordinates for this segment
-            x = radius * (1 - math.cos(segment_angle))  # Distance from start in x
-            y = radius * math.sin(segment_angle)        # Distance from start in y
+        Returns:
+            [x, y] list of next point
+        """
+        # Calculate the slope at current point to determine which axis to step
+        dx = current_point[0] - center_x
+        dy = current_point[1] - center_y
+        slope = abs(dy / dx) if dx != 0 else 2.0
 
-            # Calculate deltas from previous position
-            if i > 0:
-                dx = x - prev_x
-                dy = y - prev_y
+        if dx >= 0 and dy > 0:  # First movement pattern (top right)
+            if slope > 1:  # More vertical slope - step horizontally
+                current_point[0] += step_size
+                current_point[1] = center_y + self._safe_sqrt(radius**2 - (dx)**2)
+            else:  # More horizontal slope - step vertically
+                current_point[1] -= step_size  # Decrease y to maintain clockwise movement
+                current_point[0] = center_x + self._safe_sqrt(radius**2 - (dy)**2)
+        elif dx > 0 and dy <= 0:  # Second movement pattern (bottom right)
+            if slope > 1:  # More vertical slope - step horizontally
+                current_point[0] -= step_size
+                current_point[1] = center_y - self._safe_sqrt(radius**2 - (dx)**2)
+            else:  # More horizontal slope - step vertically
+                current_point[1] -= step_size
+                current_point[0] = center_x + self._safe_sqrt(radius**2 - (dy)**2)
+        elif dx <= 0 and dy < 0:  # Third movement pattern (bottom left)
+            if slope > 1:  # More vertical slope - step horizontally
+                current_point[0] -= step_size
+                current_point[1] = center_y - self._safe_sqrt(radius**2 - (dx)**2)
+            else:  # More horizontal slope - step vertically
+                current_point[1] += step_size
+                current_point[0] = center_x - self._safe_sqrt(radius**2 - (dy)**2)
+        else:  # Fourth movement pattern (top left)
+            if slope > 1:  # More vertical slope - step horizontally
+                current_point[0] += step_size
+                current_point[1] = center_y + self._safe_sqrt(radius**2 - (dx)**2)
+            else:  # More horizontal slope - step vertically
+                current_point[1] += step_size  # Increase y to maintain clockwise movement
+                current_point[0] = center_x - self._safe_sqrt(radius**2 - (dy)**2)
+        return current_point
 
-                # Move x and y by the delta amounts
-                if dx > 0:
-                    self.move_x(abs(dx), speed, Motor.Direction.CLOCKWISE)
-                else:
-                    self.move_x(abs(dx), speed, Motor.Direction.COUNTERCLOCKWISE)
+    def arc_clockwise(self, end_x, end_y, center_x, center_y, speed):
+        """Move in a clockwise arc to a target position around a center point
 
-                if dy > 0:
-                    self.move_y(abs(dy), speed, Motor.Direction.CLOCKWISE)
-                else:
-                    self.move_y(abs(dy), speed, Motor.Direction.COUNTERCLOCKWISE)
+        Args:
+            end_x, end_y: Target end position coordinates (mm)
+            center_x, center_y: Coordinates of the arc's center point (mm)
+            speed: Movement speed in mm/s
 
-            prev_x = x
-            prev_y = y
+        Raises:
+            ValueError: If end point has negative coordinates
+            ValueError: If radius is zero
+            ValueError: If arc would pass through negative coordinates
+        """
+        # Check end point coordinates
+        if end_x < 0 or end_y < 0:
+            raise ValueError("End point cannot have negative coordinates")
+
+        # Calculate radius from center point to current position
+        current_x, current_y = self.location
+        radius = np.sqrt((current_x - center_x)**2 + (current_y - center_y)**2)
+
+        if radius == 0:
+            raise ValueError("Radius cannot be zero")
+
+        # Verify end point is same radius from center
+        end_radius = np.sqrt((end_x - center_x)**2 + (end_y - center_y)**2)
+        if not np.isclose(radius, end_radius, rtol=1e-2, atol=1e-2):
+            raise ValueError("End point must be same radius from center as start point")
+
+        # Use a small step size to ensure smooth movement
+        step_size = Motor.MM_PER_STEP # Take small steps for smoothness
+        current_point = [current_x, current_y]
+
+        # Move along the arc until we reach the end point
+        self.stop_motor = False
+        while not self.stop_motor and (abs(current_point[0] - end_x) >= step_size or abs(current_point[1] - end_y) >= step_size):
+            # Calculate next point based on current position
+            current_point = self._calculate_next_arc_point(current_point, center_x, center_y, radius, step_size)
+
+            # Check if this movement would enter negative space
+            if current_point[0] < 0 or current_point[1] < 0:
+                self.stop_motor = True
+                raise ValueError(f"Arc would pass through negative coordinates at {current_point[0]}, {current_point[1]}")
+
+            # Move to the next point
+            self.move_to(current_point[0], current_point[1], speed)
+        # Move to the exact end point
+        self.move_to(end_x, end_y, speed)
 
     def arc_counterclockwise(self, radius, angle, speed):
         # TODO: Use the right distance-speed combos on x/y to get an arc
-        pass
-
-    def run_together(self, fun_1, fun_2):
-        #TODO: Implement parallel processing such that two functions can run at the same time
         pass
 
     def step_count_from_distance(self, distance):
@@ -238,4 +311,39 @@ class Laser:
         steps_per_second = (speed / full_revolution) * Motor.STEPS_PER_REVOLUTION
         step_delay = (1.0 / steps_per_second) # Whilst the delay should be calculated in millis, the function works in seconds
         return step_delay
+
+    def move_to(self, end_x, end_y, speed):
+        """Move in a straight line to the specified coordinates
+
+        Args:
+            end_x, end_y: Target end position coordinates (mm)
+            speed: Movement speed in mm/s
+
+        Raises:
+            ValueError: If target coordinates are negative
+        """
+        # Check for negative coordinates
+        if end_x < 0 or end_y < 0:
+            raise ValueError("Negative coordinates are not allowed")
+
+        # Calculate distance and angle to target
+        current_x, current_y = self.location
+        dx = end_x - current_x
+        dy = end_y - current_y
+
+        # Calculate distance using Pythagorean theorem
+        distance = math.sqrt(dx**2 + dy**2)
+
+        if distance == 0:
+            return
+
+        # Calculate angle (atan2 returns angle in radians from -pi to pi)
+        angle = math.degrees(math.atan2(dy, dx))
+
+        # Normalize angle to 0-360 degrees
+        if angle < 0:
+            angle += 360
+
+        # Use existing move_angle function to perform the movement
+        self.move_angle(distance, speed, angle)
 
