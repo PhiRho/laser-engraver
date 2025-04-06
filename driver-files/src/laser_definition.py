@@ -4,7 +4,6 @@ import pigpio
 import time
 import numpy as np
 from motor_definition import Motor
-import pytest
 
 class Laser:
     logger = logging.getLogger(__name__)

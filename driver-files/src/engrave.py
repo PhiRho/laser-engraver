@@ -44,10 +44,20 @@ class LaserShell(cmd.Cmd):
         distance, speed, direction = parse_y_movement(line)
         self.laser.move_y(distance, speed, direction)
 
+    def do_move_to(self, line):
+        'Move the laser to a given location (x,y) with a given speed (mm/s): move_to 100 100 10'
+        x, y, speed = parse_move_to(line)
+        self.laser.move_to(x, y, speed)
+
     def do_cw_arc(self, line):
-        'Move the laser in a clockwise arc with given radius (mm), angle (degrees) and speed (mm/s): cw_arc 100 45 10'
-        radius, angle, speed = parse_arc(line)
-        self.laser.arc_clockwise(radius, angle, speed)
+        'Move the laser in a clockwise arc ending at a location (x,y) with center point (i,j) and speed (mm/s): cw_arc 100 100 100 100 10'
+        end_x, end_y, center_x, center_y, speed = parse_arc(line)
+        self.laser.arc_clockwise(end_x, end_y, center_x, center_y, speed)
+
+    def do_ccw_arc(self, line):
+        'Move the laser in a counterclockwise arc ending at a location (x,y) with center point (i,j) and speed (mm/s): ccw_arc 100 100 100 100 10'
+        end_x, end_y, center_x, center_y, speed = parse_arc(line)
+        self.laser.arc_counterclockwise(end_x, end_y, center_x, center_y, speed)
 
     def do_home(self, line):
         'Set the current location as home (0,0): home'
@@ -68,6 +78,10 @@ def parse_angle(line):
     distance, speed, angle = line.split()
     return int(distance), int(speed), int(angle)
 
+def parse_move_to(line):
+    x, y, speed = line.split()
+    return float(x), float(y), float(speed)
+
 def parse_x_movement(line):
     distance, speed, direction = line.split()
     if direction == "+":
@@ -85,8 +99,8 @@ def parse_y_movement(line):
     return int(distance), int(speed), direction
 
 def parse_arc(line):
-    radius, angle, speed = line.split()
-    return int(radius), int(angle), int(speed)
+    end_x, end_y, center_x, center_y, speed = line.split()
+    return float(end_x), float(end_y), float(center_x), float(center_y), float(speed)
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
