@@ -59,7 +59,7 @@ class Laser:
             self.move_x(10, 100, False)
         elif gpio == self.y_limit:
             self.logger.info("Y limit hit")
-            self.move_y(10, 100, False)
+            self.move_y(10, 100, True)
         self.logger.info(f"Motor move back 10mm")
         self.stop_motor = True
 
