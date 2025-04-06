@@ -59,7 +59,7 @@ class Laser:
             self.move_x(10, 100, Motor.Direction.CLOCKWISE)
         elif gpio == self.y_limit:
             self.logger.info("Y limit hit")
-            self.move_y(10, 100, Motor.Direction.COUNTERCLOCKWISE)
+            self.move_y(10, 100, Motor.Direction.CLOCKWISE)
         self.logger.info(f"Motor move back 10mm")
         self.stop_motor = True
 
@@ -117,9 +117,9 @@ class Laser:
 
         # Handle cardinal directions
         cardinal_directions = {
-            90: lambda: self.move_y(distance, speed, Motor.Direction.COUNTERCLOCKWISE),
+            90: lambda: self.move_y(distance, speed, Motor.Direction.CLOCKWISE),
             180: lambda: self.move_x(distance, speed, Motor.Direction.CLOCKWISE),
-            270: lambda: self.move_y(distance, speed, Motor.Direction.CLOCKWISE),
+            270: lambda: self.move_y(distance, speed, Motor.Direction.COUNTERCLOCKWISE),
             0: lambda: self.move_x(distance, speed, Motor.Direction.COUNTERCLOCKWISE),
             360: lambda: self.move_x(distance, speed, Motor.Direction.COUNTERCLOCKWISE)
         }
@@ -129,10 +129,10 @@ class Laser:
 
         # Calculate quadrant-specific values
         quadrant_data = {
-            (0, 90): (0, math.cos, math.sin, Motor.Direction.COUNTERCLOCKWISE, Motor.Direction.CLOCKWISE),
-            (90, 180): (90, math.sin, math.cos, Motor.Direction.CLOCKWISE, Motor.Direction.CLOCKWISE),
-            (180, 270): (180, math.sin, math.cos, Motor.Direction.CLOCKWISE, Motor.Direction.COUNTERCLOCKWISE),
-            (270, 360): (270, math.cos, math.sin, Motor.Direction.COUNTERCLOCKWISE, Motor.Direction.COUNTERCLOCKWISE)
+            (0, 90): (0, math.cos, math.sin, Motor.Direction.COUNTERCLOCKWISE, Motor.Direction.COUNTERCLOCKWISE),
+            (90, 180): (90, math.sin, math.cos, Motor.Direction.COUNTERCLOCKWISE, Motor.Direction.CLOCKWISE),
+            (180, 270): (180, math.sin, math.cos, Motor.Direction.CLOCKWISE, Motor.Direction.CLOCKWISE),
+            (270, 360): (270, math.cos, math.sin, Motor.Direction.CLOCKWISE, Motor.Direction.COUNTERCLOCKWISE)
         }
 
         # Find the correct quadrant
