@@ -179,3 +179,76 @@ def test_arc_clockwise():
     assert pytest.approx(laser.location[0], 0.01) == 0
     assert pytest.approx(laser.location[1], 0.01) == 0
 
+def test_arc_counterclockwise():
+    """Test arc_counterclockwise method with various cases"""
+    laser = Laser(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
+
+    # Test small angle movement in quad 4
+    laser.set_home()
+    laser.move_to(50, 50, 150)
+    laser.arc_counterclockwise(0, 0, 50, 0, 150)
+    assert pytest.approx(laser.location[0], abs=0.5) == 0
+    assert pytest.approx(laser.location[1], abs=0.5) == 0
+
+    # Test small angle movement in quad 3
+    laser.set_home()
+    laser.move_to(0, 50, 150)
+    laser.arc_counterclockwise(50, 0, 50, 50, 150)
+    assert pytest.approx(laser.location[0], abs=0.5) == 50
+    assert pytest.approx(laser.location[1], abs=0.5) == 0
+
+    # Test small angle movement in quad 2
+    laser.set_home()
+    laser.arc_counterclockwise(50, 50, 0, 50, 150)
+    assert pytest.approx(laser.location[0], abs=0.5) == 50
+    assert pytest.approx(laser.location[1], abs=0.5) == 50
+
+    # Test 90-degree counterclockwise arc in first quadrant
+    laser.set_home()
+    laser.move_to(50, 0, 150)  # Move to start position
+    laser.arc_counterclockwise(0, 50, 0, 0, 150)  # 90° counterclockwise from (100,0) to (0,100)
+    assert pytest.approx(laser.location[0], abs=0.5) == 0.0
+    assert pytest.approx(laser.location[1], abs=0.5) == 50.0
+
+    # Test zero radius case (error)
+    laser.set_home()
+    with pytest.raises(ValueError, match="Radius cannot be zero"):
+        laser.arc_counterclockwise(1, 1, 0, 0, 50)  # Start point same as center point
+
+    # Test mismatched radius case (error)
+    laser.move_to(100, 0, 150)  # Move to radius 100
+    with pytest.raises(ValueError, match="End point must be same radius from center as start point"):
+        laser.arc_counterclockwise(50, 50, 0, 0, 50)  # End point at different radius than start point
+
+    # Test non-integer movements
+    laser.set_home()
+    laser.move_to(50.6, 0, 150)  # Move to non-integer start position
+    laser.arc_counterclockwise(0, 50.6, 0, 0, 150)  # 90° counterclockwise with non-integer radius
+    assert pytest.approx(laser.location[0], abs=0.5) == 0
+    assert pytest.approx(laser.location[1], abs=0.5) == 50.6
+
+    # Test small angle movement
+    laser.set_home()
+    laser.move_to(50, 0, 150)
+    laser.arc_counterclockwise(43.3, 25, 0, 0, 150)  # ~30° counterclockwise arc
+    assert pytest.approx(laser.location[0], abs=0.5) == 43.3
+    assert pytest.approx(laser.location[1], abs=0.5) == 25
+
+    # Test movement with offset center (45° counterclockwise)
+    laser.set_home()
+    laser.move_to(150, 150, 150)
+    laser.arc_counterclockwise(125, 125, 150, 125, 150)  # Arc around point (150,125) with 25 radius
+    assert pytest.approx(laser.location[0], 0.01) == 125
+    assert pytest.approx(laser.location[1], 0.01) == 125
+
+    # Test negative end coordinates (error)
+    with pytest.raises(ValueError, match="End point cannot have negative coordinates"):
+        laser.arc_counterclockwise(-10, -10, 0, 0, 50)
+
+    # Test larger angle (180° counterclockwise)
+    laser.set_home()
+    laser.move_to(0, 0, 150)  # Start at (0,0)
+    laser.arc_counterclockwise(0, 50, 0, 25, 150)  # Half circle from bottom to top, center at (0,25)
+    assert pytest.approx(laser.location[0], 0.01) == 0
+    assert pytest.approx(laser.location[1], 0.01) == 50
+

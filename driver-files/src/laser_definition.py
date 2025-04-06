@@ -201,14 +201,15 @@ class Laser:
         """Safely calculate square root, handling negative values."""
         return np.sqrt(max(0, x))
 
-    def _calculate_next_arc_point(self, current_point, center_x, center_y, radius, step_size):
-        """Calculate the next point on a clockwise arc.
+    def _calculate_next_arc_point(self, current_point, center_x, center_y, radius, step_size, clockwise=True):
+        """Calculate the next point on an arc.
 
         Args:
             current_point: [x, y] list of current position
             center_x, center_y: Center point of the arc
             radius: Radius of the arc
             step_size: Distance to move in x direction
+            clockwise: True for clockwise movement, False for counterclockwise
 
         Returns:
             [x, y] list of next point
@@ -218,48 +219,54 @@ class Laser:
         dy = current_point[1] - center_y
         slope = abs(dy / dx) if dx != 0 else 2.0
 
+        # Determine direction multipliers based on clockwise parameter
+        y_step = step_size if clockwise else -step_size
+        x_step = step_size if clockwise else -step_size
+
         if dx >= 0 and dy > 0:  # First movement pattern (top right)
             if slope > 1:  # More vertical slope - step horizontally
-                current_point[0] += step_size
+                current_point[0] += x_step
                 current_point[1] = center_y + self._safe_sqrt(radius**2 - (dx)**2)
             else:  # More horizontal slope - step vertically
-                current_point[1] -= step_size  # Decrease y to maintain clockwise movement
+                current_point[1] -= y_step
                 current_point[0] = center_x + self._safe_sqrt(radius**2 - (dy)**2)
         elif dx > 0 and dy <= 0:  # Second movement pattern (bottom right)
             if slope > 1:  # More vertical slope - step horizontally
-                current_point[0] -= step_size
+                current_point[0] -= x_step
                 current_point[1] = center_y - self._safe_sqrt(radius**2 - (dx)**2)
             else:  # More horizontal slope - step vertically
-                current_point[1] -= step_size
+                current_point[1] -= y_step
                 current_point[0] = center_x + self._safe_sqrt(radius**2 - (dy)**2)
         elif dx <= 0 and dy < 0:  # Third movement pattern (bottom left)
             if slope > 1:  # More vertical slope - step horizontally
-                current_point[0] -= step_size
+                current_point[0] -= x_step
                 current_point[1] = center_y - self._safe_sqrt(radius**2 - (dx)**2)
             else:  # More horizontal slope - step vertically
-                current_point[1] += step_size
+                current_point[1] += y_step
                 current_point[0] = center_x - self._safe_sqrt(radius**2 - (dy)**2)
         else:  # Fourth movement pattern (top left)
             if slope > 1:  # More vertical slope - step horizontally
-                current_point[0] += step_size
+                current_point[0] += x_step
                 current_point[1] = center_y + self._safe_sqrt(radius**2 - (dx)**2)
             else:  # More horizontal slope - step vertically
-                current_point[1] += step_size  # Increase y to maintain clockwise movement
+                current_point[1] += y_step
                 current_point[0] = center_x - self._safe_sqrt(radius**2 - (dy)**2)
         return current_point
 
-    def arc_clockwise(self, end_x, end_y, center_x, center_y, speed):
-        """Move in a clockwise arc to a target position around a center point
+    def _validate_arc_parameters(self, end_x, end_y, center_x, center_y):
+        """Validate parameters for arc movement.
 
         Args:
             end_x, end_y: Target end position coordinates (mm)
             center_x, center_y: Coordinates of the arc's center point (mm)
-            speed: Movement speed in mm/s
+
+        Returns:
+            float: The radius of the arc
 
         Raises:
             ValueError: If end point has negative coordinates
             ValueError: If radius is zero
-            ValueError: If arc would pass through negative coordinates
+            ValueError: If end point is not same radius from center as start point
         """
         # Check end point coordinates
         if end_x < 0 or end_y < 0:
@@ -277,15 +284,33 @@ class Laser:
         if not np.isclose(radius, end_radius, rtol=1e-2, atol=1e-2):
             raise ValueError("End point must be same radius from center as start point")
 
+        return radius
+
+    def arc_clockwise(self, end_x, end_y, center_x, center_y, speed):
+        """Move in a clockwise arc to a target position around a center point
+
+        Args:
+            end_x, end_y: Target end position coordinates (mm)
+            center_x, center_y: Coordinates of the arc's center point (mm)
+            speed: Movement speed in mm/s
+
+        Raises:
+            ValueError: If end point has negative coordinates
+            ValueError: If radius is zero
+            ValueError: If arc would pass through negative coordinates
+        """
+        # Validate parameters and get radius
+        radius = self._validate_arc_parameters(end_x, end_y, center_x, center_y)
+
         # Use a small step size to ensure smooth movement
         step_size = Motor.MM_PER_STEP # Take small steps for smoothness
-        current_point = [current_x, current_y]
+        current_point = [self.location[0], self.location[1]]
 
         # Move along the arc until we reach the end point
         self.stop_motor = False
         while not self.stop_motor and (abs(current_point[0] - end_x) >= step_size or abs(current_point[1] - end_y) >= step_size):
             # Calculate next point based on current position
-            current_point = self._calculate_next_arc_point(current_point, center_x, center_y, radius, step_size)
+            current_point = self._calculate_next_arc_point(current_point, center_x, center_y, radius, step_size, clockwise=True)
 
             # Check if this movement would enter negative space
             if current_point[0] < 0 or current_point[1] < 0:
@@ -297,9 +322,41 @@ class Laser:
         # Move to the exact end point
         self.move_to(end_x, end_y, speed)
 
-    def arc_counterclockwise(self, radius, angle, speed):
-        # TODO: Use the right distance-speed combos on x/y to get an arc
-        pass
+    def arc_counterclockwise(self, end_x, end_y, center_x, center_y, speed):
+        """Move in a counterclockwise arc to a target position around a center point
+
+        Args:
+            end_x, end_y: Target end position coordinates (mm)
+            center_x, center_y: Coordinates of the arc's center point (mm)
+            speed: Movement speed in mm/s
+
+        Raises:
+            ValueError: If end point has negative coordinates
+            ValueError: If radius is zero
+            ValueError: If arc would pass through negative coordinates
+        """
+        # Validate parameters and get radius
+        radius = self._validate_arc_parameters(end_x, end_y, center_x, center_y)
+
+        # Use a small step size to ensure smooth movement
+        step_size = Motor.MM_PER_STEP # Take small steps for smoothness
+        current_point = [self.location[0], self.location[1]]
+
+        # Move along the arc until we reach the end point
+        self.stop_motor = False
+        while not self.stop_motor and (abs(current_point[0] - end_x) >= step_size or abs(current_point[1] - end_y) >= step_size):
+            # Calculate next point based on current position
+            current_point = self._calculate_next_arc_point(current_point, center_x, center_y, radius, step_size, clockwise=False)
+
+            # Check if this movement would enter negative space
+            if current_point[0] < 0 or current_point[1] < 0:
+                self.stop_motor = True
+                raise ValueError(f"Arc would pass through negative coordinates at {current_point[0]}, {current_point[1]}")
+
+            # Move to the next point
+            self.move_to(current_point[0], current_point[1], speed)
+        # Move to the exact end point
+        self.move_to(end_x, end_y, speed)
 
     def step_count_from_distance(self, distance):
         full_revolution = Motor.TEETH_PER_REVOLUTION * Motor.TOOTH_PITCH
