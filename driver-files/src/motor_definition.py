@@ -57,7 +57,6 @@ class Motor:
 
     def set_direction(self, direction):
         self.pi.write(self.direction, direction.value)
-        self.LOGGER.debug("Direction set to: %s", direction)
 
     def step_with_delay(self, delay):
         self.pi.write(self.step, 1)

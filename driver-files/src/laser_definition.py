@@ -112,10 +112,10 @@ class Laser:
 
     def step_y(self, delay, direction):
         if direction:
-            self.x_motor.set_direction(Motor.Direction.COUNTERCLOCKWISE)
+            self.x_motor.set_direction(Motor.Direction.CLOCKWISE)
             self.y_motor.set_direction(Motor.Direction.CLOCKWISE)
         else:
-            self.x_motor.set_direction(Motor.Direction.CLOCKWISE)
+            self.x_motor.set_direction(Motor.Direction.COUNTERCLOCKWISE)
             self.y_motor.set_direction(Motor.Direction.COUNTERCLOCKWISE)
 
         self.x_motor.step_with_delay(delay)
