@@ -85,17 +85,17 @@ def parse_move_to(line):
 def parse_x_movement(line):
     distance, speed, direction = line.split()
     if direction == "+":
-        direction = Motor.Direction.COUNTERCLOCKWISE
+        direction = True
     else:
-        direction = Motor.Direction.CLOCKWISE
+        direction = False
     return int(distance), int(speed), direction
 
 def parse_y_movement(line):
     distance, speed, direction = line.split()
     if direction == "-":
-        direction = Motor.Direction.COUNTERCLOCKWISE
+        direction = False
     else:
-        direction = Motor.Direction.CLOCKWISE
+        direction = True
     return int(distance), int(speed), direction
 
 def parse_arc(line):

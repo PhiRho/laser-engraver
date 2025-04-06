@@ -53,22 +53,21 @@ class Laser:
         self.logger.info(f"GPIO {gpio} has changed state with level {level}")
         if gpio == self.x_limits[0]:
             self.logger.info("X limit 0 hit")
-            self.move_x(10, 100, Motor.Direction.COUNTERCLOCKWISE)
+            self.move_x(10, 100, True)
         elif gpio == self.x_limits[1]:
             self.logger.info("X limit 1 hit")
-            self.move_x(10, 100, Motor.Direction.CLOCKWISE)
+            self.move_x(10, 100, False)
         elif gpio == self.y_limit:
             self.logger.info("Y limit hit")
-            self.move_y(10, 100, Motor.Direction.CLOCKWISE)
+            self.move_y(10, 100, False)
         self.logger.info(f"Motor move back 10mm")
         self.stop_motor = True
 
     """Move in a straight line along the X Axis"""
-    def move_x(self, distance, speed, direction):
-        self.x_motor.set_direction(direction)
+    def move_x(self, distance, speed, positive=True):
         step_count = self.step_count_from_distance(distance)
         step_delay = self.step_delay_from_speed(speed)
-        if direction.value == Motor.Direction.COUNTERCLOCKWISE.value:
+        if positive:
             step_size = Motor.MM_PER_STEP
         else:
             step_size = -Motor.MM_PER_STEP
@@ -77,24 +76,29 @@ class Laser:
             if self.stop_motor:
                 self.logger.warn("Motor interrupted by limit")
                 break
-            self.x_motor.step_with_delay(step_delay)
+            self.step_x(step_delay, positive)
             self.location = (self.location[0] + step_size, self.location[1])
+
+    def step_x(self, delay, direction):
+        if direction:
+            self.x_motor.set_direction(Motor.Direction.COUNTERCLOCKWISE)
+        else:
+            self.x_motor.set_direction(Motor.Direction.CLOCKWISE)
+        self.x_motor.step_with_delay(delay)
 
     """
     Move in a stright line on the Y Axis
     As long as the delay is small enough, the line will be straight.
     But since the motors are not being triggered in parallel this is an approximation at best.
     """
-    def move_y(self, distance, speed, direction):
-        self.x_motor.set_direction(direction)
-        self.y_motor.set_direction(direction)
+    def move_y(self, distance, speed, positive=True):
         self.y_motor.set_microstep(1)
         step_count = self.step_count_from_distance(distance)
         step_delay = self.step_delay_from_speed(speed)
-        if direction.value == Motor.Direction.CLOCKWISE.value:
-            step_size = -Motor.MM_PER_STEP
-        else:
+        if positive:
             step_size = Motor.MM_PER_STEP
+        else:
+            step_size = -Motor.MM_PER_STEP
         self.stop_motor = False
         for i in range(step_count):
             if self.stop_motor:
@@ -103,9 +107,19 @@ class Laser:
             if self.location[1] + step_size > 650:
                 self.logger.warn("Reached limit enforced by software on Y-Axis")
                 break
-            self.x_motor.step_with_delay(step_delay)
-            self.y_motor.step_with_delay(step_delay)
+            self.step_y(step_delay, positive)
             self.location = (self.location[0], self.location[1] + step_size)
+
+    def step_y(self, delay, direction):
+        if direction:
+            self.x_motor.set_direction(Motor.Direction.COUNTERCLOCKWISE)
+            self.y_motor.set_direction(Motor.Direction.CLOCKWISE)
+        else:
+            self.x_motor.set_direction(Motor.Direction.CLOCKWISE)
+            self.y_motor.set_direction(Motor.Direction.COUNTERCLOCKWISE)
+
+        self.x_motor.step_with_delay(delay)
+        self.y_motor.step_with_delay(delay)
 
     """
     Move in a straight line at the specified angle (in degrees) for the given distance (mm) at speed (mm/s)
@@ -117,11 +131,11 @@ class Laser:
 
         # Handle cardinal directions
         cardinal_directions = {
-            90: lambda: self.move_y(distance, speed, Motor.Direction.CLOCKWISE),
-            180: lambda: self.move_x(distance, speed, Motor.Direction.CLOCKWISE),
-            270: lambda: self.move_y(distance, speed, Motor.Direction.COUNTERCLOCKWISE),
-            0: lambda: self.move_x(distance, speed, Motor.Direction.COUNTERCLOCKWISE),
-            360: lambda: self.move_x(distance, speed, Motor.Direction.COUNTERCLOCKWISE)
+            90: lambda: self.move_y(distance, speed, True),
+            180: lambda: self.move_x(distance, speed, False),
+            270: lambda: self.move_y(distance, speed, False),
+            0: lambda: self.move_x(distance, speed, True),
+            360: lambda: self.move_x(distance, speed, True)
         }
 
         if angle in cardinal_directions:
@@ -129,10 +143,10 @@ class Laser:
 
         # Calculate quadrant-specific values
         quadrant_data = {
-            (0, 90): (0, math.cos, math.sin, Motor.Direction.COUNTERCLOCKWISE, Motor.Direction.COUNTERCLOCKWISE),
-            (90, 180): (90, math.sin, math.cos, Motor.Direction.COUNTERCLOCKWISE, Motor.Direction.CLOCKWISE),
-            (180, 270): (180, math.sin, math.cos, Motor.Direction.CLOCKWISE, Motor.Direction.CLOCKWISE),
-            (270, 360): (270, math.cos, math.sin, Motor.Direction.CLOCKWISE, Motor.Direction.COUNTERCLOCKWISE)
+            (0, 90): (0, math.cos, math.sin, True, True),
+            (90, 180): (90, math.sin, math.cos, False, True),
+            (180, 270): (180, math.sin, math.cos, False, False),
+            (270, 360): (270, math.cos, math.sin, True, False)
         }
 
         # Find the correct quadrant
@@ -144,10 +158,6 @@ class Laser:
                 x_direction, y_direction = x_dir, y_dir
                 break
 
-        # Set the direction of the motors
-        self.x_motor.set_direction(x_direction)
-        self.y_motor.set_direction(y_direction)
-
         # Calculate steps needed for each axis
         x_steps = self.step_count_from_distance(round(x_dist, 3))
         y_steps = self.step_count_from_distance(round(y_dist, 3))
@@ -156,8 +166,8 @@ class Laser:
         step_delay = self.step_delay_from_speed(speed)
 
         # Track position changes for location updates
-        x_step_size = Motor.MM_PER_STEP if x_direction == Motor.Direction.COUNTERCLOCKWISE else -Motor.MM_PER_STEP
-        y_step_size = Motor.MM_PER_STEP if y_direction == Motor.Direction.CLOCKWISE else -Motor.MM_PER_STEP
+        x_step_size = Motor.MM_PER_STEP if x_direction else -Motor.MM_PER_STEP
+        y_step_size = Motor.MM_PER_STEP if y_direction else -Motor.MM_PER_STEP
 
         # Use the longer axis for the main loop
         total_steps = max(x_steps, y_steps)
@@ -188,11 +198,12 @@ class Laser:
 
             if x_accumulator >= 1:
                 self.x_motor.step_with_delay(step_delay)
+                self.step_x(step_delay, x_direction)
                 self.location = (self.location[0] + x_step_size, self.location[1])
                 x_accumulator -= 1
 
             if y_accumulator >= 1:
-                self.y_motor.step_with_delay(step_delay)
+                self.step_y(step_delay, y_direction)
                 self.location = (self.location[0], self.location[1] + y_step_size)
                 y_accumulator -= 1
 

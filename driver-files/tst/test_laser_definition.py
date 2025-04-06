@@ -26,9 +26,9 @@ def test_step_delay_from_speed():
 
 def test_move_x():
     laser = Laser(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
-    laser.move_x(1, 1, Motor.Direction.CLOCKWISE)
+    laser.move_x(1, 1, False)
     assert laser.location[0] == -1
-    laser.move_x(1, 1, Motor.Direction.COUNTERCLOCKWISE)
+    laser.move_x(1, 1, True)
     assert laser.location[0] <= 0.0001
 
 def test_interrupt_movement():
@@ -40,9 +40,9 @@ def test_interrupt_movement():
 
 def test_move_y():
     laser = Laser(x_motor, y_motor, x_limits, y_limits, laser_pin, pi)
-    laser.move_y(1, 1, Motor.Direction.CLOCKWISE)
+    laser.move_y(1, 1, False)
     assert laser.location[1] == -1
-    laser.move_y(1, 1, Motor.Direction.COUNTERCLOCKWISE)
+    laser.move_y(1, 1, True)
     assert laser.location[1] <= 0.0001
 
 def test_move_angle():
