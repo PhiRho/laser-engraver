@@ -36,28 +36,58 @@ class LaserShell(cmd.Cmd):
 
     def do_move_x(self, line):
         'Move the laser a distance (in mm) on the X Axis at speed (in mm/s) and with direction (+/-): move_x 100 10 +'
-        distance, speed, direction = parse_x_movement(line)
-        self.laser.move_x(distance, speed, direction)
+        try:
+            distance, speed, direction = parse_x_movement(line)
+            self.laser.move_x(distance, speed, direction)
+        except (ValueError, TypeError) as e:
+            print(f"Error executing move_x command: {e}")
+            print("Usage: move_x <distance> <speed> <direction>")
+        except Exception as e:
+            print(f"Error executing move_x command: {e}")
 
     def do_move_y(self, line):
         'Move the laser a distance (in mm) on the Y Axis at speed (in mm/s) and with direction (+/-): move_y 100 10 +'
-        distance, speed, direction = parse_y_movement(line)
-        self.laser.move_y(distance, speed, direction)
+        try:
+            distance, speed, direction = parse_y_movement(line)
+            self.laser.move_y(distance, speed, direction)
+        except (ValueError, TypeError) as e:
+            print(f"Error executing move_y command: {e}")
+            print("Usage: move_y <distance> <speed> <direction>")
+        except Exception as e:
+            print(f"Error executing move_y command: {e}")
 
     def do_move_to(self, line):
         'Move the laser to a given location (x,y) with a given speed (mm/s): move_to 100 100 10'
-        x, y, speed = parse_move_to(line)
-        self.laser.move_to(x, y, speed)
+        try:
+            x, y, speed = parse_move_to(line)
+            self.laser.move_to(x, y, speed)
+        except (ValueError, TypeError) as e:
+            print(f"Error executing move_to command: {e}")
+            print("Usage: move_to <x> <y> <speed>")
+        except Exception as e:
+            print(f"Error executing move_to command: {e}")
 
     def do_cw_arc(self, line):
         'Move the laser in a clockwise arc ending at a location (x,y) with center point (i,j) and speed (mm/s): cw_arc 100 100 100 100 10'
-        end_x, end_y, center_x, center_y, speed = parse_arc(line)
-        self.laser.arc_clockwise(end_x, end_y, center_x, center_y, speed)
+        try:
+            end_x, end_y, center_x, center_y, speed = parse_arc(line)
+            self.laser.arc_clockwise(end_x, end_y, center_x, center_y, speed)
+        except (ValueError, TypeError) as e:
+            print(f"Error executing cw_arc command: {e}")
+            print("Usage: cw_arc <end_x> <end_y> <center_x> <center_y> <speed>")
+        except Exception as e:
+            print(f"Error executing cw_arc command: {e}")
 
     def do_ccw_arc(self, line):
         'Move the laser in a counterclockwise arc ending at a location (x,y) with center point (i,j) and speed (mm/s): ccw_arc 100 100 100 100 10'
-        end_x, end_y, center_x, center_y, speed = parse_arc(line)
-        self.laser.arc_counterclockwise(end_x, end_y, center_x, center_y, speed)
+        try:
+            end_x, end_y, center_x, center_y, speed = parse_arc(line)
+            self.laser.arc_counterclockwise(end_x, end_y, center_x, center_y, speed)
+        except (ValueError, TypeError) as e:
+            print(f"Error executing ccw_arc command: {e}")
+            print("Usage: ccw_arc <end_x> <end_y> <center_x> <center_y> <speed>")
+        except Exception as e:
+            print(f"Error executing ccw_arc command: {e}")
 
     def do_home(self, line):
         'Set the current location as home (0,0): home'
@@ -65,8 +95,14 @@ class LaserShell(cmd.Cmd):
 
     def do_angle(self, line):
         'Move the laser in a straight line for a given distance, with a given speed, at a given angle (degrees): angle 100 45 10'
-        distance, speed, angle = parse_angle(line)
-        self.laser.move_angle(distance, speed, angle)
+        try:
+            distance, speed, angle = parse_angle(line)
+            self.laser.move_angle(distance, speed, angle)
+        except (ValueError, TypeError) as e:
+            print(f"Error executing angle command: {e}")
+            print("Usage: angle <distance> <speed> <angle>")
+        except Exception as e:
+            print(f"Error executing angle command: {e}")
 
     def do_quit(self, line):
         'Quit the engraver: quit'

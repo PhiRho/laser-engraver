@@ -312,7 +312,7 @@ class Laser:
         radius = self._validate_arc_parameters(end_x, end_y, center_x, center_y)
 
         # Use a small step size to ensure smooth movement
-        step_size = Motor.MM_PER_STEP # Take small steps for smoothness
+        step_size = Motor.MM_PER_STEP * 4 # if the step size is too small the motors get janky about it
         current_point = [self.location[0], self.location[1]]
 
         # Move along the arc until we reach the end point
@@ -348,7 +348,7 @@ class Laser:
         radius = self._validate_arc_parameters(end_x, end_y, center_x, center_y)
 
         # Use a small step size to ensure smooth movement
-        step_size = Motor.MM_PER_STEP # Take small steps for smoothness
+        step_size = Motor.MM_PER_STEP * 4 # if the step size is too small the motors get janky about it
         current_point = [self.location[0], self.location[1]]
 
         # Move along the arc until we reach the end point
