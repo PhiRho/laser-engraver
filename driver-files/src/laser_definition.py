@@ -405,7 +405,6 @@ class Laser:
 
         # Calculate angle (atan2 returns angle in radians from -pi to pi)
         angle = math.degrees(math.atan2(dy, dx))
-        self.logger.info(f"Angle to move: {angle}")
 
         # Normalize angle to 0-360 degrees
         if angle < 0:
