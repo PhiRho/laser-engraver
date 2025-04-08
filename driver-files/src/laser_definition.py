@@ -53,10 +53,10 @@ class Laser:
         self.logger.info(f"GPIO {gpio} has changed state with level {level}")
         if gpio == self.x_limits[0]:
             self.logger.info("X limit 0 hit")
-            self.move_x(10, 100, True)
+            self.move_x(10, 100, False)
         elif gpio == self.x_limits[1]:
             self.logger.info("X limit 1 hit")
-            self.move_x(10, 100, False)
+            self.move_x(10, 100, True)
         elif gpio == self.y_limit:
             self.logger.info("Y limit hit")
             self.move_y(10, 100, True)
@@ -81,9 +81,9 @@ class Laser:
 
     def step_x(self, delay, direction):
         if direction:
-            self.x_motor.set_direction(Motor.Direction.COUNTERCLOCKWISE)
-        else:
             self.x_motor.set_direction(Motor.Direction.CLOCKWISE)
+        else:
+            self.x_motor.set_direction(Motor.Direction.COUNTERCLOCKWISE)
         self.x_motor.step_with_delay(delay)
 
     """
@@ -188,7 +188,7 @@ class Laser:
                 break
 
             # Check Y axis limit
-            if y_step_size > 0 and self.location[1] + y_step_size > 650:
+            if y_step_size > 0 and self.location[1] + y_step_size > 600:
                 self.logger.warn("Reached limit enforced by software on Y-Axis")
                 break
 
@@ -197,7 +197,6 @@ class Laser:
             y_accumulator += y_ratio
 
             if x_accumulator >= 1:
-                self.x_motor.step_with_delay(step_delay)
                 self.step_x(step_delay, x_direction)
                 self.location = (self.location[0] + x_step_size, self.location[1])
                 x_accumulator -= 1
