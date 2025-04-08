@@ -145,8 +145,8 @@ class Laser:
         quadrant_data = {
             (0, 90): (0, math.cos, math.sin, True, True),
             (90, 180): (90, math.sin, math.cos, False, True),
-            (180, 270): (180, math.sin, math.cos, False, False),
-            (270, 360): (270, math.cos, math.sin, True, False)
+            (180, 270): (180, math.cos, math.sin, False, False),
+            (270, 360): (270, math.sin, math.cos, True, False)
         }
 
         # Find the correct quadrant
