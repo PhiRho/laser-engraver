@@ -43,11 +43,18 @@ class Laser:
     def set_home(self):
         self.location = (0, 0)
 
+    def laser_on(self):
+        self.pi.write(self.laser_pin, 1)
+
+    def laser_off(self):
+        self.pi.write(self.laser_pin, 0)
+
     """
     Called by `pigpio` when one of the limit switches is depressed. Required to ensure that the
     motors cannot overshoot their bounds.
     """
     def interrupt_movement(self, gpio, level, tick):
+        self.laser_off()
         self.stop_motor = True
         time.sleep(0.01)
         self.logger.info(f"GPIO {gpio} has changed state with level {level}")

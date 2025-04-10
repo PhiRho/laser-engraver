@@ -34,6 +34,17 @@ class LaserShell(cmd.Cmd):
         print(f"Y limit defined as {self.laser.y_limit}")
         print(f"Laser pin defined as {self.laser.laser_pin}")
 
+    def do_draw_to(self, line):
+        'Draw a line from the current location to a given location (x,y) with a given speed (mm/s): draw_to 100 100 10'
+        try:
+            x, y, speed = parse_move_to(line)
+            self.laser.laser_on()
+            self.laser.move_to(x, y, speed)
+            self.laser.laser_off()
+        except (ValueError, TypeError) as e:
+            print(f"Error executing draw_to command: {e}")
+            print("Usage: draw_to <x> <y> <speed>")
+
     def do_move_x(self, line):
         'Move the laser a distance (in mm) on the X Axis at speed (in mm/s) and with direction (+/-): move_x 100 10 +'
         try:
