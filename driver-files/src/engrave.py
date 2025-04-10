@@ -4,6 +4,7 @@ from motor_definition import Motor
 import configparser, os, cmd
 from mock_pi import MockPi
 import pigpio
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,18 @@ class LaserShell(cmd.Cmd):
         except (ValueError, TypeError) as e:
             print(f"Error executing draw_to command: {e}")
             print("Usage: draw_to <x> <y> <speed>")
+
+    def do_burn(self, line):
+        'Turn the laser on for a number of seconds: burn 10'
+        try:
+            seconds = int(line)
+            self.laser.laser_on()
+            time.sleep(seconds)
+            self.laser.laser_off()
+        except (ValueError, TypeError) as e:
+            print(f"Error executing burn command: {e}")
+            print("Usage: burn <seconds>")
+
 
     def do_move_x(self, line):
         'Move the laser a distance (in mm) on the X Axis at speed (in mm/s) and with direction (+/-): move_x 100 10 +'
