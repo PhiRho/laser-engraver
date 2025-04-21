@@ -5,6 +5,7 @@ import configparser, os, cmd
 from mock_pi import MockPi
 import pigpio
 import time
+from gcode import GCodeInterpreter
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +113,44 @@ class LaserShell(cmd.Cmd):
             print("Usage: ccw_arc <end_x> <end_y> <center_x> <center_y> <speed>")
         except Exception as e:
             print(f"Error executing ccw_arc command: {e}")
+
+    def do_draw_file(self, line):
+        'Execute a GCode file: draw_file path/to/file.gcode [--dry-run]'
+        if not self.laser:
+            print("Error: Laser not initialized. Use 'init' command first.")
+            return
+
+        try:
+            # Parse arguments
+            args = line.split()
+            if not args:
+                print("Usage: draw_file <file_path> [--dry-run]")
+                return
+
+            file_path = args[0]
+            dry_run = "--dry-run" in args
+
+            # Initialize GCode interpreter with the laser
+            interpreter = GCodeInterpreter(self.laser)
+
+            # Read and execute the file
+            print(f"Reading GCode file: {file_path}")
+            if dry_run:
+                print("Performing dry run (no actual movement)")
+
+            instructions = interpreter.read_file(file_path, dry_run=dry_run)
+
+            # Print summary
+            print(f"Processed {len(instructions)} instructions")
+            if not dry_run:
+                print("File execution completed")
+
+        except FileNotFoundError:
+            print(f"Error: File not found: {file_path}")
+        except ValueError as e:
+            print(f"Error: {e}")
+        except Exception as e:
+            print(f"Error executing GCode file: {e}")
 
     def do_home(self, line):
         'Set the current location as home (0,0): home'
