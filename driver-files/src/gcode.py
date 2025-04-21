@@ -198,8 +198,8 @@ class GCodeInterpreter:
 
             # Execute the movement if laser is available and not in dry run mode
             if self.laser and not dry_run:
-                # For G0, use a fixed high speed (1000 mm/s)
-                speed = 1000.0 if self.mm_mode else 1000.0 * 25.4
+                # For G0, use a fixed high speed (200 mm/s)
+                speed = 200.0
                 self.laser.move_to(self.current_x, self.current_y, speed)
 
             return {
