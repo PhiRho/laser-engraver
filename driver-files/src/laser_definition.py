@@ -36,6 +36,9 @@ class Laser:
         self.pi.set_mode(self.y_limit, pigpio.INPUT)
         self.pi.set_pull_up_down(self.y_limit, pigpio.PUD_UP)
 
+        self.pi.set_mode(self.laser_pin, pigpio.OUTPUT)
+        self.pi.write(self.laser_pin, 0)
+
         self.pi.callback(self.x_limits[0], pigpio.FALLING_EDGE, self.interrupt_movement)
         self.pi.callback(self.x_limits[1], pigpio.FALLING_EDGE, self.interrupt_movement)
         self.pi.callback(self.y_limit, pigpio.FALLING_EDGE, self.interrupt_movement)
