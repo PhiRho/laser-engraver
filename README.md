@@ -14,7 +14,8 @@ together, and how to drive such a thing. This is the collection of 3D objects,
 
 [x] Parts list for electro-mechanical components
 
-[ ] Full tutorial (coming soon)
+[x] Full tutorial: [Build a laser
+engraver](http://pippah.net/2025/05/31/build-a-laser-engraver/)
 
 ### Future Work
 - Fix up some of the 3D designs
